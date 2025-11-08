@@ -1,6 +1,6 @@
 const zipList = [
   {
-    name: "HLDM (85M)",
+    name: "HLDM-broken (85M)",
     packageName: "hldm.zip",
   },
   {
