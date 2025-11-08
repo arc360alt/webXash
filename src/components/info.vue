@@ -1,8 +1,6 @@
 <template>
   <div class="box attribution-box">
-    <a href="https://github.com/arc360alt/webXash/?tab=readme-ov-file#how-to-use">Instructions</a>
-    <a href="https://github.com/arc360alt/webXash/">GitHub</a>
-    <a href="https://github.com/yohimik/webxash3d-fwgs">Xash3D</a>
+ <p>This version of WebXash is simply a version for my friends at school to use, I may add some new features here and there too.</p>
   </div>
 </template>
 
