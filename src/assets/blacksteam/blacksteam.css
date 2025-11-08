@@ -19,11 +19,11 @@ nav li {
 nav li a {
   display: block;
   padding: 8px 25px;
-  color: #f0b43f;
+  color: #0004ff;
   text-decoration: none;
 }
 nav li a:hover {
-  color: #e3e41f;
+  color: #2c1fe4;
   background: #181818;
 }
 nav li:hover ul.dropdown {
@@ -394,8 +394,8 @@ progress::-webkit-progress-value {
   height: 16px;
   background: repeating-linear-gradient(
     to right,
-    #96892d,
-    #96892d 8px,
+    #3d2d96,
+    #2f2d96 8px,
     #080808 1px,
     #080808 12px
   );
@@ -404,8 +404,8 @@ progress::-moz-progress-bar {
   height: 16px;
   background: repeating-linear-gradient(
     to right,
-    #96892d,
-    #96892d 8px,
+    #3d2d96,
+    #2d3496 8px,
     #080808 1px,
     #080808 12px
   );
@@ -511,7 +511,7 @@ body {
   image-rendering: pixelated;
 }
 ::selection {
-  background-color: #96892d;
+  background-color: #342d96;
 }
 h1,
 h2,
@@ -613,7 +613,7 @@ p.menu-item {
 }
 p.menu-item:hover,
 p.menu-item--selected {
-  background-color: #96892d;
+  background-color: #2f2d96;
   user-select: none;
   cursor: pointer;
 }
