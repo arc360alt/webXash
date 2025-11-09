@@ -1,5 +1,5 @@
 <template>
-  <div class="box attribution-box">
+  <div class="window" name="About:">
  <p>This version of WebXash is simply a version for my friends at school to use, I may add some new features here and there too.</p>
   </div>
 </template>

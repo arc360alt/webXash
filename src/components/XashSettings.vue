@@ -7,8 +7,9 @@
       <XashLoadZip />
       <XashLaunchOptions />
       <XashStart />
-      <Attribution />
       <Info />
+      <Warnings />
+      <Attribution />
     </div>
     <XashLoading v-if="loading" />
   </div>
@@ -26,6 +27,7 @@
   import XashLoadDirectory from '/@/components/XashLoadDirectory.vue';
   import XashGames from '/@/components/XashGames.vue';
   import Info from '/@/components/info.vue';
+  import Warnings from '/@/components/Warnings.vue';
 
   const store = useXashStore();
   const { loading, selectedGame } = storeToRefs(store);
