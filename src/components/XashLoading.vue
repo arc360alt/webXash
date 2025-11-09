@@ -3,6 +3,7 @@
     <div class="xash-loading__container">
       {{ loadingPercentage }}%
       <progress :value="loadingProgress" :max="maxLoadingAmount" />
+      <p>This may take a while.</p>
     </div>
   </div>
 </template>
