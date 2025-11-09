@@ -468,7 +468,7 @@ export const useXashStore = defineStore(
       }, 10000);
 
       // Sync saves when the page is about to unload
-      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const handleBeforeUnload = () => {
         clearInterval(syncInterval);
         // Try to sync synchronously on unload
         syncSavesToStorage();
