@@ -35,7 +35,7 @@ onMounted(() => {
     } else {
       clearInterval(interval); // stop at max
     }
-  }, 1); // slower increments for visible progress
+  }, 15); 
 });
 
 onUnmounted(() => {
