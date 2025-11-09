@@ -67,7 +67,8 @@
       "target": ["AppImage", "deb"]
     },
     "win": {
-      "target": ["nsis"]
+      "target": ["nsis"],
+      "sign": false
     }
   }
 }
