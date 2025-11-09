@@ -64,11 +64,12 @@
       "package.json"
     ],
     "linux": {
-      "target": ["AppImage", "deb"]
+      "target": ["AppImage", "deb"],
+      "publish": null
     },
     "win": {
       "target": ["nsis"],
-      "publish": "never"
+      "publish": null
     }
   }
 }
