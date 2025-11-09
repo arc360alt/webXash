@@ -68,7 +68,7 @@
     },
     "win": {
       "target": ["nsis"],
-      "sign": false
+      "publish": "never"
     }
   }
 }
