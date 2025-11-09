@@ -36,6 +36,9 @@ import { delay } from '/@/utils/helpers.ts';
 // Constants
 
 const XASH_BASE_DIR = '/rodir/';
+const XASH_RW_DIR = '/rwdir/'; // Read-write directory for saves
+const IDB_NAME = 'XashSaveData';
+const IDB_STORE = 'files';
 
 const XASH_LIBS = {
   filesystem: filesystemURL,
@@ -44,6 +47,59 @@ const XASH_LIBS = {
   render: {
     gles3compat: gles3URL,
   },
+};
+
+// IndexedDB helper functions
+const openDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(IDB_NAME, 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE);
+      }
+    };
+  });
+};
+
+const saveFileToIDB = async (path: string, data: Uint8Array): Promise<void> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([IDB_STORE], 'readwrite');
+    const store = transaction.objectStore(IDB_STORE);
+    const request = store.put(data, path);
+    
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const loadFileFromIDB = async (path: string): Promise<Uint8Array | null> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([IDB_STORE], 'readonly');
+    const store = transaction.objectStore(IDB_STORE);
+    const request = store.get(path);
+    
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const getAllKeysFromIDB = async (): Promise<string[]> => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([IDB_STORE], 'readonly');
+    const store = transaction.objectStore(IDB_STORE);
+    const request = store.getAllKeys();
+    
+    request.onsuccess = () => resolve(request.result as string[]);
+    request.onerror = () => reject(request.error);
+  });
 };
 
 // Perform these callbacks when the matching command is emitted from the xash console
@@ -103,6 +159,10 @@ export const useXashStore = defineStore(
     const fullScreen = ref(false);
     const enableConsole = ref(true);
     const enableCheats = ref(false);
+    const saveStatus = ref<'idle' | 'syncing' | 'error'>('idle');
+
+    // Store xash instance for syncing
+    let xashInstance: Xash3D | null = null;
 
     // Methods
 
@@ -135,6 +195,107 @@ export const useXashStore = defineStore(
       loadingProgress.value++;
       if (loadingProgress.value >= maxLoadingAmount.value) {
         onEndLoading();
+      }
+    };
+
+    // Recursively read all files from a directory
+    const readDirectoryRecursive = (xash: Xash3D, path: string, files: Map<string, Uint8Array> = new Map()): Map<string, Uint8Array> => {
+      try {
+        const entries = xash.em.FS.readdir(path);
+        
+        for (const entry of entries) {
+          if (entry === '.' || entry === '..') continue;
+          
+          const fullPath = path + (path.endsWith('/') ? '' : '/') + entry;
+          
+          try {
+            const stat = xash.em.FS.stat(fullPath);
+            
+            if (xash.em.FS.isDir(stat.mode)) {
+              // Recursively read subdirectory
+              readDirectoryRecursive(xash, fullPath, files);
+            } else {
+              // Read file
+              const data = xash.em.FS.readFile(fullPath);
+              files.set(fullPath, data);
+            }
+          } catch (e) {
+            // Skip files we can't read
+          }
+        }
+      } catch (e) {
+        // Directory doesn't exist or can't be read
+      }
+      
+      return files;
+    };
+
+    // Load saved files from IndexedDB into the filesystem
+    const loadSavedFiles = async (xash: Xash3D) => {
+      try {
+        console.log('Loading saved files from IndexedDB...');
+        const keys = await getAllKeysFromIDB();
+        let loadedCount = 0;
+        
+        for (const path of keys) {
+          try {
+            const data = await loadFileFromIDB(path);
+            if (data) {
+              // Create directory structure if needed
+              const dir = path.substring(0, path.lastIndexOf('/'));
+              if (dir) {
+                try {
+                  xash.em.FS.mkdirTree(dir);
+                } catch (e) {
+                  // Directory might already exist
+                }
+              }
+              
+              // Write file to filesystem
+              xash.em.FS.writeFile(path, data);
+              loadedCount++;
+            }
+          } catch (e) {
+            console.warn(`Failed to load file ${path}:`, e);
+          }
+        }
+        
+        if (loadedCount > 0) {
+          console.log(`✓ Loaded ${loadedCount} saved files from IndexedDB`);
+        } else {
+          console.log('No saved files found (this is normal on first run)');
+        }
+      } catch (err) {
+        console.error('Failed to load saved files:', err);
+      }
+    };
+
+    // Save all files from /rwdir to IndexedDB
+    const syncSavesToStorage = async () => {
+      if (!xashInstance?.em?.FS) {
+        console.warn('Cannot sync - xash instance not available');
+        return;
+      }
+      
+      saveStatus.value = 'syncing';
+      try {
+        const files = readDirectoryRecursive(xashInstance, XASH_RW_DIR);
+        let savedCount = 0;
+        
+        for (const [path, data] of files.entries()) {
+          try {
+            await saveFileToIDB(path, data);
+            savedCount++;
+          } catch (e) {
+            console.warn(`Failed to save file ${path}:`, e);
+          }
+        }
+        
+        console.log(`✓ Synced ${savedCount} files to IndexedDB at`, new Date().toLocaleTimeString());
+        saveStatus.value = 'idle';
+      } catch (err) {
+        console.error('Failed to sync saves:', err);
+        saveStatus.value = 'error';
       }
     };
 
@@ -229,9 +390,20 @@ export const useXashStore = defineStore(
       setCanvasLoading();
 
       const xash = await initXash();
+      xashInstance = xash; // Store instance for syncing
+      
       await processFiles(filesArray, xash);
+      
+      // Start the game
       xash.main();
       await onAfterLoad(xash);
+      
+      // Wait for filesystem to be ready, then load saved files
+      await delay(2000);
+      await loadSavedFiles(xash);
+      
+      // Setup auto-save
+      setupAutoSaveSync();
     };
 
     const startXashZip = async (zip?: ArrayBuffer | undefined) => {
@@ -253,6 +425,8 @@ export const useXashStore = defineStore(
       }
 
       const xash = await initXash();
+      xashInstance = xash; // Store instance for syncing
+      
       const zipData = new Uint8Array(zipBuffer);
       const files = unzipSync(zipData);
 
@@ -272,10 +446,50 @@ export const useXashStore = defineStore(
       }
 
       xash.em.FS.chdir(XASH_BASE_DIR);
+      
+      // Start the game
       xash.main();
 
       onEndLoading();
       await onAfterLoad(xash);
+      
+      // Wait for filesystem to be ready, then load saved files
+      await delay(2000);
+      await loadSavedFiles(xash);
+      
+      // Setup auto-save
+      setupAutoSaveSync();
+    };
+
+    const setupAutoSaveSync = () => {
+      // Sync saves every 10 seconds
+      const syncInterval = setInterval(() => {
+        syncSavesToStorage();
+      }, 10000);
+
+      // Sync saves when the page is about to unload
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        clearInterval(syncInterval);
+        // Try to sync synchronously on unload
+        syncSavesToStorage();
+      };
+
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          // User switched tabs - sync immediately
+          syncSavesToStorage();
+        }
+      };
+
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Cleanup function
+      return () => {
+        clearInterval(syncInterval);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     };
 
     const onAfterLoad = async (xash: Xash3D) => {
@@ -307,10 +521,12 @@ export const useXashStore = defineStore(
       fullScreen,
       enableConsole,
       enableCheats,
+      saveStatus,
       onStartLoading,
       downloadZip,
       startXashZip,
       startXashFiles,
+      syncSavesToStorage, // Expose for manual syncing if needed
     };
   },
   {

@@ -15,7 +15,7 @@ export const onConsoleMessage = (logs: ConsoleCallback[]): void => {
     const matchingLog = logs.find(
       (log) => typeof logMessage === 'string' && logMessage?.match(log.match),
     );
-    debugger
+
     if (matchingLog) {
       matchingLog.callback();
       return;

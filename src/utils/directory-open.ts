@@ -115,8 +115,6 @@ export default async (
     return;
   }
 
-  debugger;
-
   options.recursive = options.recursive || false;
 
   let handle: FileSystemDirectoryHandle | null = null;
