@@ -12,8 +12,12 @@ const zipList = [
     packageName: "dayone.zip",
   },
     {
-    name: "Modern (241MB)",
+    name: "Pre-25th Aneversery (241MB)",
     packageName: "modern.zip",
+  },
+      {
+    name: "25th Aneversery (279MB)",
+    packageName: "valve.zip",
   },
 ];
 
