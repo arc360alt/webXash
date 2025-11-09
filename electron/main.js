@@ -31,6 +31,10 @@ function createWindow() {
 
   // Inject responsive top bar
   mainWindow.webContents.on('did-finish-load', () => {
+    // Get absolute paths
+    const minimizePath = `file://${path.join(__dirname, 'minimize.png')}`;
+    const closePath = `file://${path.join(__dirname, 'close.png')}`;
+
     mainWindow.webContents.executeJavaScript(`
       const style = document.createElement('style');
       style.innerHTML = \`
@@ -63,22 +67,20 @@ function createWindow() {
       bar.id = 'electron-top-bar';
 
       const minimizeBtn = document.createElement('img');
-      minimizeBtn.src = 'electron/minimize.png';
+      minimizeBtn.src = "${minimizePath}";
       minimizeBtn.id = 'electron-minimize';
 
       const closeBtn = document.createElement('img');
-      closeBtn.src = 'electron/close.png';
+      closeBtn.src = "${closePath}";
       closeBtn.id = 'electron-close';
 
       bar.appendChild(minimizeBtn);
       bar.appendChild(closeBtn);
       document.body.appendChild(bar);
 
-      // Button handlers
       minimizeBtn.addEventListener('click', () => window.electronAPI.minimize());
       closeBtn.addEventListener('click', () => window.electronAPI.close());
 
-      // Optional: Adjust drag bar if window is resized (auto width)
       window.addEventListener('resize', () => {
         bar.style.width = window.innerWidth + 'px';
       });
